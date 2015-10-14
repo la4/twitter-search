@@ -1,5 +1,8 @@
 package com.coderivium.sidorov.vadim.twitsearch;
 
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -11,6 +14,9 @@ import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
@@ -20,25 +26,17 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        String [] names = {
-                "Vasya",
-                "Petya",
-                "Kostya",
-                "Artem",
-                "Igor",
-                "Vlad",
-                "Kirill",
-                "Gena",
-                "Vova",
-                "Nastya",
-                "Masha",
-                "Olya",
-                "Julia",
-                "Vika"};
+        Bitmap sampleAvatar = BitmapFactory.decodeResource(getResources(), R.drawable.avatar_demo);
+
+        List<TweetData> tweets = new ArrayList<>();
+        for(int i = 0; i < 20; i++) {
+            TweetData bufTweet = new TweetData(sampleAvatar, "@" + "durov", "Pavel Durov", "Fuck WhatsApp, Telegram the best, add me as a friend at vk.com! Also I would like to donate a 1.000.000 dollars to Wikipedia, yeah.");
+            tweets.add(bufTweet);
+        }
 
         ListView listView = (ListView) findViewById(R.id.listView);
 
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.element_list, names);
+        TweetAdapter adapter = new TweetAdapter(this, R.layout.element_list, (ArrayList)tweets);
 
         listView.setAdapter(adapter);
     }
