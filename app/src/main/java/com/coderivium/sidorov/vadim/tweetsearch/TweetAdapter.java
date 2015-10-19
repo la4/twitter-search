@@ -1,4 +1,4 @@
-package com.coderivium.sidorov.vadim.twitsearch;
+package com.coderivium.sidorov.vadim.tweetsearch;
 
 import android.content.Context;
 import android.graphics.Bitmap;
