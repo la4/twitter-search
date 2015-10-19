@@ -4,6 +4,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,7 +26,11 @@ public class MainActivity extends AppCompatActivity {
 
         List<TweetData> tweets = new ArrayList<>();
         for(int i = 0; i < 20; i++) {
-            TweetData bufTweet = new TweetData(sampleAvatar, "@" + "durov", "Pavel Durov", "Fuck WhatsApp, Telegram the best, add me as a friend at vk.com! Also I would like to donate a 1.000.000 dollars to Wikipedia, yeah. I also like DOGE MEME such wow you know...");
+            TweetData bufTweet = new TweetData(
+                    sampleAvatar,
+                    "@" + "durov",
+                    "Pavel Durov",
+                    "Working from Rome this week. @Rome, Italy https://instagram.com/p/9BDXa_L7bm/");
             tweets.add(bufTweet);
         }
 
@@ -51,10 +56,16 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_search) {
+            SearchView searchView = (SearchView)findViewById(R.id.action_search);
+            searchAction(searchView.getQuery().toString());
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void searchAction(String searchString) {
+        //placeholder
     }
 }
