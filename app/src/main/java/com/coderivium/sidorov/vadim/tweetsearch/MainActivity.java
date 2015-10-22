@@ -17,21 +17,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 import twitter4j.Twitter;
+import twitter4j.TwitterFactory;
+import twitter4j.auth.AccessToken;
+import twitter4j.conf.ConfigurationBuilder;
+
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String LOG_TAG = MainActivity.class.getSimpleName();
 
+    private ConfigurationBuilder builder;
+
+    private Twitter twitter;
+    private final AccessToken accessToken
+            = new AccessToken(TwitterConstants.TWITTER_ACCES_TOKEN, TwitterConstants.TWITTER_ACCES_TOKEN_SECRET);
+
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        ListView listView = (ListView) findViewById(R.id.listView);
+
         setSupportActionBar(toolbar);
 
-        Bitmap sampleAvatar = BitmapFactory.decodeResource(getResources(), R.drawable.avatar_demo);
 
+        Bitmap sampleAvatar = BitmapFactory.decodeResource(getResources(), R.drawable.avatar_demo);
         List<TweetData> tweets = new ArrayList<>();
-        for(int i = 0; i < 20; i++) {
+        for (int i = 0; i < 20; i++) {
             TweetData bufTweet = new TweetData(
                     sampleAvatar,
                     "@" + "durov",
@@ -39,12 +53,13 @@ public class MainActivity extends AppCompatActivity {
                     "Working from Rome this week. @Rome, Italy https://instagram.com/p/9BDXa_L7bm/");
             tweets.add(bufTweet);
         }
-
-        ListView listView = (ListView) findViewById(R.id.listView);
-
-        TweetAdapter adapter = new TweetAdapter(this, R.layout.element_list, (ArrayList)tweets);
-
+        
+        TweetAdapter adapter = new TweetAdapter(this, R.layout.element_list, (ArrayList) tweets);
         listView.setAdapter(adapter);
+
+        twitter = new TwitterFactory().getInstance();
+        twitter.setOAuthConsumer(TwitterConstants.TWITTER_CONSUMER_KEY, TwitterConstants.TWITTER_ACCES_TOKEN_SECRET);
+        twitter.setOAuthAccessToken(accessToken);
     }
 
     @Override
@@ -92,12 +107,6 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_search) {
-            SearchView searchView = (SearchView)findViewById(R.id.action_search);
-            //searchView.setMaxWidth();
-            searchAction(searchView.getQuery().toString());
-            return true;
-        }
 
         return super.onOptionsItemSelected(item);
     }
