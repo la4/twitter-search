@@ -11,6 +11,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,9 +25,11 @@ public class TweetAdapter extends ArrayAdapter<Status> {
     private static final String LOG_TAG = TweetAdapter.class.getSimpleName();
 
     LayoutInflater inflater;
+    Context context;
 
     public TweetAdapter(Context context, int textViewResourceId, ArrayList<Status> items) {
         super(context, textViewResourceId, items);
+        this.context = context;
         inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
@@ -44,7 +48,13 @@ public class TweetAdapter extends ArrayAdapter<Status> {
         ((TextView) view.findViewById(R.id.contentTextView)).setText(tweet.getText());
 
 
-
+        Picasso.with(context)
+                .load(tweet.getUser().getOriginalProfileImageURL()) //probably too large image
+                .transform(new RoundedTransformation(15, 0))
+                .placeholder(R.drawable.default_profile_reasonably_small)
+                .error(R.drawable.error)
+                .fit()
+                .into((ImageView) view.findViewById(R.id.authorAvatarImageView));
         return view;
     }
 }
