@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private final AccessToken accessToken
             = new AccessToken(TwitterConstants.TWITTER_ACCES_TOKEN, TwitterConstants.TWITTER_ACCES_TOKEN_SECRET);
 
-    private static final String TWEETS_GETTING = "Getting tweets...";
+    private static final String TWEETS_GETTING = "Searching for tweets...";
 
     private List<Status> tweets;
     private static final int TWEETS_AMOUNT = 20;
