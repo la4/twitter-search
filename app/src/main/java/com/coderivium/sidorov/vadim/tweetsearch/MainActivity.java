@@ -6,7 +6,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.ArrayAdapter;
 import android.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -28,31 +31,29 @@ import twitter4j.auth.AccessToken;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String LOG_TAG = MainActivity.class.getSimpleName();
+    private static final String LOG_TAG = MainActivity.class.getSimpleName();
+    private static final String TWEETS_GETTING = "Searching for tweets";
+    private static final int MAX_TWEETS_LOAD = 100;
+    private static final int TWEETS_AMOUNT = 20;
 
-    //Bitmap avatarPlaceholder;
+    private final AccessToken accessToken = new AccessToken(TwitterConstants.TWITTER_ACCES_TOKEN, TwitterConstants.TWITTER_ACCES_TOKEN_SECRET);
+
     private Twitter twitter;
     private TweetAdapter adapter;
-    private final AccessToken accessToken
-            = new AccessToken(TwitterConstants.TWITTER_ACCES_TOKEN, TwitterConstants.TWITTER_ACCES_TOKEN_SECRET);
-
-    private static final String TWEETS_GETTING = "Searching for tweets...";
-
+    private SwipeRefreshLayout mSwipeRefreshLayout;
     private List<Status> tweets;
-    private static final int TWEETS_AMOUNT = 20;
+    private String currentSearchQuery = null;
+    ListView listView;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        ListView listView = (ListView) findViewById(R.id.listView);
-
         setSupportActionBar(toolbar);
 
-
-        Bitmap sampleAvatar = BitmapFactory.decodeResource(getResources(), R.drawable.avatar_demo);
-
+        listView = (ListView) findViewById(R.id.listView);
 
         tweets = new ArrayList<>();
 
@@ -64,7 +65,14 @@ public class MainActivity extends AppCompatActivity {
         twitter.setOAuthConsumer(TwitterConstants.TWITTER_CONSUMER_KEY, TwitterConstants.TWITTER_CONSUMER_SECRET);
         twitter.setOAuthAccessToken(accessToken);
 
-        //avatarPlaceholder = BitmapFactory.decodeResource(getResources(), R.drawable.avatar_demo);
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.blue, R.color.green, R.color.orange);
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                refreshContent();
+            }
+        });
     }
 
     @Override
@@ -92,8 +100,8 @@ public class MainActivity extends AppCompatActivity {
                 if (searchView != null) {
                     searchView.clearFocus();
                 }
-
-                searchAction(query);
+                currentSearchQuery = query;
+                searchAction(currentSearchQuery);
                 return true;
             }
         };
@@ -121,6 +129,11 @@ public class MainActivity extends AppCompatActivity {
         tweetsGetter.execute(searchString);
     }
 
+    private void refreshContent() {
+        TweetsRefresher refresherTask = new TweetsRefresher();
+        refresherTask.execute(currentSearchQuery);
+    }
+
     class TweetsGetter extends AsyncTask<String, Void, Void> {
         @Override
         protected void onPreExecute() {
@@ -136,10 +149,11 @@ public class MainActivity extends AppCompatActivity {
                 QueryResult result;
                 query.setCount(TWEETS_AMOUNT);
                 result = twitter.search(query);
+                tweets.clear();
 
                 if (result.getTweets().size() > 0) {
-                    tweets.addAll(0, result.getTweets());
-                    Log.d(LOG_TAG, "Tweets added");
+                    tweets.addAll(0, result.getTweets()); // Is it thread safe?
+                    Log.d(LOG_TAG, "Added " + String.valueOf(result.getTweets().size()) + " tweets.");
                 }
             } catch (TwitterException te) {
                 te.printStackTrace();
@@ -151,6 +165,37 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void result) {
             adapter.notifyDataSetChanged();
+        }
+    }
+
+    class TweetsRefresher extends AsyncTask<String, Void, Void> {
+
+        @Override
+        protected Void doInBackground(String... params) {
+            try {
+                if (currentSearchQuery == null) return null;
+
+                Query query = new Query(params[0]);
+                QueryResult result;
+                query.sinceId(tweets.get(0).getId());
+                query.setCount(MAX_TWEETS_LOAD); //To prevent overloading if a lot of updates
+                result = twitter.search(query);
+
+                if (result.getTweets().size() > 0) {
+                    tweets.addAll(0, result.getTweets()); // Is it thread safe?
+                    Log.d(LOG_TAG, "Added " + String.valueOf(result.getTweets().size()) + " tweets.");
+                }
+            } catch (TwitterException te) {
+                te.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            adapter.notifyDataSetChanged();
+            mSwipeRefreshLayout.setRefreshing(false);
         }
     }
 }
