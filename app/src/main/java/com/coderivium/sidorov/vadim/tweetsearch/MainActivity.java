@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.SearchView;
 import android.support.v7.widget.Toolbar;
@@ -34,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final String TWEETS_GETTING = "Searching for tweets";
     private static final int MAX_TWEETS_LOAD = 100;
-    private static final int TWEETS_AMOUNT = 20;
+    private static final int TWEETS_LOAD_AMOUNT = 20;
 
     private final AccessToken accessToken = new AccessToken(TwitterConstants.TWITTER_ACCES_TOKEN, TwitterConstants.TWITTER_ACCES_TOKEN_SECRET);
 
@@ -49,18 +50,31 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        tweets = new ArrayList<>();
+
         // Toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // ListView
         listView = (ListView) findViewById(R.id.listView);
-
-        tweets = new ArrayList<>();
-
         adapter = new TweetAdapter(this, R.layout.element_list, (ArrayList) tweets);
         listView.setAdapter(adapter);
 
+        listView.setOnScrollListener(new AbsListView.OnScrollListener() {
 
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if (listView.getLastVisiblePosition() == listView.getCount() - 1 && scrollState == 0) {
+                    TweetsMore mt = new TweetsMore();
+                    mt.execute(currentSearchQuery);
+                }
+            }
+
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            }
+        });
+
+        // Twitter Singleton
         twitter = new TwitterFactory().getInstance();
         twitter.setOAuthConsumer(TwitterConstants.TWITTER_CONSUMER_KEY, TwitterConstants.TWITTER_CONSUMER_SECRET);
         twitter.setOAuthAccessToken(accessToken);
@@ -143,11 +157,13 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected Void doInBackground(String... params) {
             try {
+                if (currentSearchQuery == null) return null;
+
                 Log.d(LOG_TAG, params[0]);
 
                 Query query = new Query(params[0]);
                 QueryResult result;
-                query.setCount(TWEETS_AMOUNT);
+                query.setCount(TWEETS_LOAD_AMOUNT);
                 result = twitter.search(query);
                 tweets.clear();
 
@@ -196,6 +212,35 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(Void result) {
             adapter.notifyDataSetChanged();
             mSwipeRefreshLayout.setRefreshing(false);
+        }
+    }
+
+    class TweetsMore extends AsyncTask<String, Void, Void> {
+        @Override
+        protected Void doInBackground(String... params) {
+            try {
+                if (currentSearchQuery == null) return null;
+
+                Query query = new Query(params[0]);
+                QueryResult result;
+                query.maxId(tweets.get(tweets.size() - 1).getId() - 1);
+                query.setCount(TWEETS_LOAD_AMOUNT); //To prevent overloading if a lot of updates
+                result = twitter.search(query);
+
+                if (result.getTweets().size() > 0) {
+                    tweets.addAll(result.getTweets()); // Is it thread safe?
+                    Log.d(LOG_TAG, "Added " + String.valueOf(result.getTweets().size()) + " tweets.");
+                }
+            } catch (TwitterException te) {
+                te.printStackTrace();
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            adapter.notifyDataSetChanged();
         }
     }
 }
